@@ -1,13 +1,24 @@
-import { EmployeeInput } from "./types";
+import { EmployeeMaster, PayrollInputRow } from "./types";
 
-/** Excel 한글 헤더 <-> 내부 필드명 매핑 (업로드 읽기용) */
-export const COLUMN_MAP: Array<[header: string, field: keyof EmployeeInput]> = [
+/** Employee Master Excel 헤더 <-> 필드명 매핑 */
+export const MASTER_COLUMN_MAP: Array<[header: string, field: keyof EmployeeMaster]> = [
+  ["사번", "employeeNumber"],
+  ["성명", "employeeName"],
+  ["부서", "department"],
+  ["직책", "position"],
+  ["재직상태", "employmentStatus"],
+  ["이메일", "email"],
+  ["연락처", "phone"],
+  ["입사일", "hireDate"],
+];
+
+export const MASTER_REQUIRED_HEADERS = ["사번", "성명", "부서", "직책", "재직상태"];
+
+/** Payroll 입력 Excel 헤더 <-> 필드명 매핑 (전월/당월 공통) */
+export const PAYROLL_COLUMN_MAP: Array<[header: string, field: keyof PayrollInputRow]> = [
   ["사번", "employeeNumber"],
   ["성명", "employeeName"],
   ["재직상태", "employmentStatus"],
-  ["부서", "department"],
-  ["연락처", "phone"],
-  ["이메일", "email"],
   ["기본급", "baseSalary"],
   ["직책수당", "positionAllowance"],
   ["식대", "mealAllowance"],
@@ -23,12 +34,11 @@ export const COLUMN_MAP: Array<[header: string, field: keyof EmployeeInput]> = [
   ["소득세", "incomeTax"],
   ["지방소득세", "localIncomeTax"],
   ["기타공제", "otherDeduction"],
-  ["전월총지급액", "previousGrossPay"],
 ];
 
-export const REQUIRED_HEADERS = ["사번", "성명", "재직상태", "기본급"];
+export const PAYROLL_REQUIRED_HEADERS = ["사번", "성명", "재직상태", "기본급"];
 
-export const NUMERIC_HEADERS = [
+export const PAYROLL_NUMERIC_HEADERS = [
   "기본급",
   "직책수당",
   "식대",
@@ -41,46 +51,74 @@ export const NUMERIC_HEADERS = [
   "소득세",
   "지방소득세",
   "기타공제",
-  "전월총지급액",
 ];
 
-export const INSURANCE_HEADERS: Array<{ header: string; field: keyof EmployeeInput }> = [
+export const PAYROLL_INSURANCE_HEADERS: Array<{ header: string; field: keyof PayrollInputRow }> = [
   { header: "국민연금적용여부", field: "pensionApplied" },
   { header: "건강보험적용여부", field: "healthInsuranceApplied" },
   { header: "고용보험적용여부", field: "employmentInsuranceApplied" },
 ];
 
-export const FIXED_PAY_FIELDS: Array<keyof EmployeeInput> = [
+export const FIXED_PAY_FIELDS: Array<keyof PayrollInputRow> = [
   "baseSalary",
   "positionAllowance",
   "mealAllowance",
   "fixedAllowance",
 ];
 
-export const VARIABLE_PAY_FIELDS: Array<keyof EmployeeInput> = [
+export const VARIABLE_PAY_FIELDS: Array<keyof PayrollInputRow> = [
   "overtimePay",
   "incentive",
   "bonus",
   "otherPayment",
 ];
 
-/** 엑셀에서 파싱된 한 행(헤더 기준 객체)을 내부 스키마 객체로 변환 */
-export function rowFromExcelRecord(record: Record<string, unknown>): EmployeeInput {
-  const row = {} as EmployeeInput;
-  for (const [header, field] of COLUMN_MAP) {
+/** 전월/당월 비교 대상 필드 (총지급/총공제 구성 요소 전부) */
+export const COMPARISON_FIELDS: Array<{ field: string; label: string }> = [
+  { field: "baseSalary", label: "기본급" },
+  { field: "positionAllowance", label: "직책수당" },
+  { field: "mealAllowance", label: "식대" },
+  { field: "fixedAllowance", label: "기타고정수당" },
+  { field: "overtimePay", label: "연장근로수당" },
+  { field: "incentive", label: "인센티브" },
+  { field: "bonus", label: "성과급" },
+  { field: "otherPayment", label: "기타지급" },
+  { field: "grossPay", label: "총지급액" },
+  { field: "pension", label: "국민연금" },
+  { field: "healthInsurance", label: "건강보험" },
+  { field: "employmentInsurance", label: "고용보험" },
+  { field: "incomeTax", label: "소득세" },
+  { field: "localIncomeTax", label: "지방소득세" },
+  { field: "otherDeduction", label: "기타공제" },
+  { field: "totalDeductions", label: "총공제액" },
+  { field: "netPay", label: "최종지급액" },
+];
+
+export function masterRowFromExcelRecord(record: Record<string, unknown>): EmployeeMaster {
+  const row = {} as EmployeeMaster;
+  for (const [header, field] of MASTER_COLUMN_MAP) {
+    const v = Object.prototype.hasOwnProperty.call(record, header) ? record[header] : null;
+    row[field] = v === null || v === undefined ? "" : String(v).trim();
+  }
+  return row;
+}
+
+export function payrollRowFromExcelRecord(record: Record<string, unknown>): PayrollInputRow {
+  const row = {} as PayrollInputRow;
+  for (const [header, field] of PAYROLL_COLUMN_MAP) {
     row[field] = Object.prototype.hasOwnProperty.call(record, header) ? record[header] : null;
   }
   return row;
 }
 
-/** 다운로드용 결과 행 하나를 엑셀 헤더 기준 객체로 변환할 때 사용할 헤더 순서 */
+/** Employee Results 결과 시트 헤더 순서 */
 export const RESULT_EXPORT_HEADERS = [
   "사번",
   "성명",
-  "재직상태",
   "부서",
-  "연락처",
-  "이메일",
+  "직책",
+  "재직상태",
+  "직원구분",
   "기본급",
   "직책수당",
   "식대",
@@ -103,5 +141,8 @@ export const RESULT_EXPORT_HEADERS = [
   "변동금액",
   "변동률",
   "검증상태",
-  "확인필요사유",
+  "시연용우선순위",
+  "검토상태",
+  "검증사유",
+  "메모",
 ] as const;

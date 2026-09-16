@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Payroll 급여 산출 및 검증 자동화 도구",
-  description: "급여 입력자료 검증부터 최종 지급액 산출까지 - 시연용 프로토타입",
+  title: "Payroll 급여 검증 및 마감 지원 시스템",
+  description: "전월·당월 급여자료 비교부터 이상변동 검토 및 마감까지 - 실무형 프로토타입",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="h-full">{children}</body>
     </html>
   );
 }
