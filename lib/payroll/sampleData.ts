@@ -1,9 +1,13 @@
 /**
  * sampleData.ts
  * -----------------------------------------------------------------------
- * 발표(시연)용 가상 Employee Master + 전월/당월 Payroll 100명분을
- * 고정(deterministic) 규칙으로 생성한다 - 실행할 때마다 항상 동일한
- * 결과가 나오며, 실제 인물·회사와 무관한 가상 데이터이다.
+ * 발표(시연)용 가상 전월/당월 Payroll 100명분을 고정(deterministic) 규칙
+ * 으로 생성한다 - 실행할 때마다 항상 동일한 결과가 나오며, 실제
+ * 인물·회사와 무관한 가상 데이터이다.
+ *
+ * 부서/직책/이메일/연락처/입사일은 별도의 Employee Master 파일이 아니라
+ * 이 Payroll 시트 자체의 선택 컬럼으로 포함한다 (실무 Payroll 대장에
+ * 인적사항이 함께 있는 경우가 많다는 점을 반영).
  *
  * 정상 약 75명 / 확인필요 약 20명 / 오류 3명 (+ 신규 3명 · 전월미존재 2명은
  * 별도 보조 지표) 이 나오도록 시나리오를 배치했다. 객체의 key 는 Excel
@@ -14,21 +18,15 @@
 
 export type PayrollFieldValue = string | number | null;
 
-export interface SampleMasterRecord {
-  사번: string;
-  성명: string;
-  부서: string;
-  직책: string;
-  재직상태: string;
-  이메일: string;
-  연락처: string;
-  입사일: string;
-}
-
 export interface SamplePayrollRecord {
   사번: string;
   성명: string;
   재직상태: string;
+  부서: string;
+  직책: string;
+  이메일: string;
+  연락처: string;
+  입사일: string;
   기본급: PayrollFieldValue;
   직책수당: PayrollFieldValue;
   식대: PayrollFieldValue;
@@ -93,19 +91,6 @@ function hireDateFor(i: number): string {
   return `${year}-${pad2(month)}-${pad2(day)}`;
 }
 
-function buildMasterRecord(i: number): SampleMasterRecord {
-  return {
-    사번: `EMP${pad3(i)}`,
-    성명: `직원${pad3(i)}`,
-    부서: departmentFor(i),
-    직책: positionFor(i),
-    재직상태: "재직",
-    이메일: `employee${pad3(i)}@example.com`,
-    연락처: `010-0000-${pad4(i)}`,
-    입사일: hireDateFor(i),
-  };
-}
-
 function buildBaselineRecord(i: number): SamplePayrollRecord {
   const base = baseSalaryFor(i);
   const incomeTax = Math.round((base * 0.033) / 1000) * 1000;
@@ -113,6 +98,11 @@ function buildBaselineRecord(i: number): SamplePayrollRecord {
     사번: `EMP${pad3(i)}`,
     성명: `직원${pad3(i)}`,
     재직상태: "재직",
+    부서: departmentFor(i),
+    직책: positionFor(i),
+    이메일: `employee${pad3(i)}@example.com`,
+    연락처: `010-0000-${pad4(i)}`,
+    입사일: hireDateFor(i),
     기본급: base,
     직책수당: POSITION_ALLOWANCE[positionFor(i)],
     식대: 200000,
@@ -153,24 +143,21 @@ const DUPLICATE_NUMBER = 27;
 const RETIREE_WITH_PAY = 28;
 
 export interface SampleDataset {
-  master: SampleMasterRecord[];
   previous: SamplePayrollRecord[];
   current: SamplePayrollRecord[];
 }
 
 /** 매번 호출해도 완전히 동일한 결과를 반환하는 고정(deterministic) 샘플 데이터셋. */
 export function buildSampleDataset(): SampleDataset {
-  const master: SampleMasterRecord[] = [];
   const previous: SamplePayrollRecord[] = [];
   const current: SamplePayrollRecord[] = [];
 
   for (let i = 1; i <= EMPLOYEE_COUNT; i++) {
-    const m = buildMasterRecord(i);
-    if (DROPPED.includes(i)) m.재직상태 = "퇴사";
-    master.push(m);
-
     const prevBase = buildBaselineRecord(i);
     const currBase = clone(prevBase);
+    if (DROPPED.includes(i)) {
+      prevBase.재직상태 = "퇴사";
+    }
 
     if (NEW_HIRE.includes(i)) {
       current.push(currBase);
@@ -239,5 +226,5 @@ export function buildSampleDataset(): SampleDataset {
     }
   }
 
-  return { master, previous, current };
+  return { previous, current };
 }

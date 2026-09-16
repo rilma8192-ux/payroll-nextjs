@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { AlertTriangle, FileSpreadsheet, History, PlayCircle, Repeat, Sparkles, UploadCloud } from "lucide-react";
 import { EmployeeComparison, PayrollRunSummary } from "@/lib/payroll/types";
 import { won } from "@/lib/payroll/format";
-import { downloadSampleCurrentExcel, downloadSampleMasterExcel, downloadSamplePreviousExcel } from "@/lib/payroll/excel";
+import { downloadSampleCurrentExcel, downloadSamplePreviousExcel } from "@/lib/payroll/excel";
 import StatusBadge, { PriorityBadge } from "./StatusBadge";
 import ProfilePopover from "./ProfilePopover";
 
@@ -19,13 +19,11 @@ interface Props {
   runName: string;
   onChangeRunName: (v: string) => void;
 
-  masterFile: UploadedFileInfo | null;
   previousFile: UploadedFileInfo | null;
   currentFile: UploadedFileInfo | null;
-  uploadErrors: { master?: string; previous?: string; current?: string };
+  uploadErrors: { previous?: string; current?: string };
   loadingStep: string | null;
 
-  onUploadMaster: (file: File) => void;
   onUploadPrevious: (file: File) => void;
   onUploadCurrent: (file: File) => void;
   onStartWithSample: () => void;
@@ -112,12 +110,10 @@ export default function HomeView(props: Props) {
     onChangePayrollMonth,
     runName,
     onChangeRunName,
-    masterFile,
     previousFile,
     currentFile,
     uploadErrors,
     loadingStep,
-    onUploadMaster,
     onUploadPrevious,
     onUploadCurrent,
     onStartWithSample,
@@ -207,7 +203,6 @@ export default function HomeView(props: Props) {
         )}
 
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <UploadSlot label="Employee Master" required={false} info={masterFile} error={uploadErrors.master} onFile={onUploadMaster} />
           <UploadSlot
             label="전월 Payroll"
             required={!carryForwardActive}
@@ -224,10 +219,6 @@ export default function HomeView(props: Props) {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-          <button onClick={downloadSampleMasterExcel} className="underline hover:text-brand-dark">
-            sample_employee_master.xlsx 다운로드
-          </button>
-          <span>·</span>
           <button onClick={downloadSamplePreviousExcel} className="underline hover:text-brand-dark">
             sample_payroll_previous.xlsx 다운로드
           </button>
@@ -236,6 +227,9 @@ export default function HomeView(props: Props) {
             sample_payroll_current.xlsx 다운로드
           </button>
         </div>
+        <p className="mt-1 text-xs text-slate-400">
+          부서·직책·이메일·연락처·입사일은 별도 파일 없이 위 Payroll 시트에 선택 컬럼으로 함께 넣을 수 있습니다.
+        </p>
 
         <div className="mt-5">
           {loadingStep ? (

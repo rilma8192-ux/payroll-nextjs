@@ -99,6 +99,12 @@ export function computeSinglePeriod(row: PayrollInputRow, rules: PayrollRules): 
     employeeName: strOrEmpty(row.employeeName),
     employmentStatus: strOrEmpty(row.employmentStatus),
 
+    department: strOrEmpty(row.department),
+    position: strOrEmpty(row.position),
+    email: strOrEmpty(row.email),
+    phone: strOrEmpty(row.phone),
+    hireDate: strOrEmpty(row.hireDate),
+
     baseSalary: num(row.baseSalary),
     positionAllowance: num(row.positionAllowance),
     mealAllowance: num(row.mealAllowance),

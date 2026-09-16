@@ -18,19 +18,13 @@ export type ReviewPriority = "높음" | "중간" | "낮음";
 /** 전월 대비 이 직원의 상태 분류 */
 export type EmployeeChangeType = "기존" | "신규" | "전월미존재";
 
-/** Employee Master 1행 (선택 업로드) */
-export interface EmployeeMaster {
-  employeeNumber: string;
-  employeeName: string;
-  department: string;
-  position: string;
-  employmentStatus: string;
-  email: string;
-  phone: string;
-  hireDate: string;
-}
-
-/** Excel 에서 그대로 읽어온 Payroll 입력 1행 (전월/당월 공통 스키마, 검증 전) */
+/**
+ * Excel 에서 그대로 읽어온 Payroll 입력 1행 (전월/당월 공통 스키마, 검증 전).
+ *
+ * 부서/직책/이메일/연락처/입사일은 급여 계산에는 쓰이지 않는 인적사항 참고
+ * 정보로, 실무에서 Payroll 대장에 함께 들어 있는 경우가 많아 별도의
+ * Employee Master 파일 없이 이 한 시트에 선택 컬럼으로 포함한다.
+ */
 export interface PayrollInputRow {
   employeeNumber: unknown;
   employeeName: unknown;
@@ -50,6 +44,13 @@ export interface PayrollInputRow {
   incomeTax: unknown;
   localIncomeTax: unknown;
   otherDeduction: unknown;
+
+  /** 인적사항 (급여 계산에는 사용되지 않음, 선택 컬럼) */
+  department?: unknown;
+  position?: unknown;
+  email?: unknown;
+  phone?: unknown;
+  hireDate?: unknown;
 }
 
 /** 시연용 계산 기준 (실제 법정 요율이 아님) */
@@ -72,6 +73,13 @@ export interface PayrollComputedResult {
   employeeNumber: string;
   employeeName: string;
   employmentStatus: string;
+
+  /** 인적사항 (급여 계산에는 사용되지 않는 참고 정보) */
+  department: string;
+  position: string;
+  email: string;
+  phone: string;
+  hireDate: string;
 
   baseSalary: number;
   positionAllowance: number;
@@ -162,12 +170,6 @@ export interface PayrollRunRecord {
   summary: PayrollRunSummary;
   rules: PayrollRules;
   comparisons: EmployeeComparison[];
-}
-
-export interface ParsedMasterFile {
-  fileName: string;
-  columnCount: number;
-  rows: EmployeeMaster[];
 }
 
 export interface ParsedPayrollFile {

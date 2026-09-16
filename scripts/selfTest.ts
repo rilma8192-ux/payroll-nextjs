@@ -1,10 +1,10 @@
 /* Payroll 검증/비교 엔진 자가 테스트 (Node 환경, xlsx 왕복 포함) */
 import * as XLSX from "xlsx";
 import { buildSampleDataset } from "../lib/payroll/sampleData";
-import { masterRowFromExcelRecord, payrollRowFromExcelRecord } from "../lib/payroll/columns";
+import { payrollRowFromExcelRecord } from "../lib/payroll/columns";
 import { buildEmployeeComparisons } from "../lib/payroll/compare";
 import { DEFAULT_RULES } from "../lib/payroll/rules";
-import { EmployeeMaster, PayrollInputRow } from "../lib/payroll/types";
+import { PayrollInputRow } from "../lib/payroll/types";
 
 function roundTripXlsx(rows: Record<string, unknown>[]): Record<string, unknown>[] {
   const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -16,19 +16,17 @@ function roundTripXlsx(rows: Record<string, unknown>[]): Record<string, unknown>
   return XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: null, raw: true });
 }
 
-const { master, previous, current } = buildSampleDataset();
+const { previous, current } = buildSampleDataset();
 
-const masterRecords = roundTripXlsx(master as unknown as Record<string, unknown>[]);
 const previousRecords = roundTripXlsx(previous as unknown as Record<string, unknown>[]);
 const currentRecords = roundTripXlsx(current as unknown as Record<string, unknown>[]);
 
-const masterRows: EmployeeMaster[] = masterRecords.map(masterRowFromExcelRecord);
 const previousRows: PayrollInputRow[] = previousRecords.map(payrollRowFromExcelRecord);
 const currentRows: PayrollInputRow[] = currentRecords.map(payrollRowFromExcelRecord);
 
-console.log(`Master ${masterRows.length}행 / 전월 ${previousRows.length}행 / 당월 ${currentRows.length}행 (xlsx 왕복 완료)`);
+console.log(`전월 ${previousRows.length}행 / 당월 ${currentRows.length}행 (xlsx 왕복 완료, 부서/직책/이메일 등 인적사항 포함)`);
 
-const comparisons = buildEmployeeComparisons(masterRows, previousRows, currentRows, DEFAULT_RULES);
+const comparisons = buildEmployeeComparisons(previousRows, currentRows, DEFAULT_RULES);
 const currentPeriod = comparisons.filter((c) => c.changeType !== "전월미존재");
 
 const normal = currentPeriod.filter((c) => c.validationStatus === "정상").length;
@@ -75,6 +73,7 @@ const emp001 = findComp("EMP001");
 // 기본급2,500,000 + 식대200,000(사원 직책수당0) = 총지급 2,700,000
 check("EMP001 총지급액 2,700,000", emp001.current?.grossPay === 2700000);
 check("EMP001 신규입사(전월 자료 없음), 정상", emp001.changeType === "신규" && emp001.validationStatus === "정상");
+check("EMP001 부서/이메일이 Payroll 시트에서 직접 채워짐", emp001.department === "인사팀" && emp001.email === "employee001@example.com");
 
 const emp030 = findComp("EMP030");
 check("EMP030 변동없음(기존, 정상)", emp030.changeType === "기존" && emp030.validationStatus === "정상" && emp030.totalChangeRate === 0);

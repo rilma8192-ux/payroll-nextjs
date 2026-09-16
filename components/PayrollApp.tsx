@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { EmployeeComparison, EmployeeMaster, PayrollInputRow, PayrollRules, PayrollRunRecord, ReviewStatus } from "@/lib/payroll/types";
+import { EmployeeComparison, PayrollInputRow, PayrollRules, PayrollRunRecord, ReviewStatus } from "@/lib/payroll/types";
 import { DEFAULT_RULES } from "@/lib/payroll/rules";
-import { masterRowFromExcelRecord, payrollRowFromExcelRecord } from "@/lib/payroll/columns";
+import { payrollRowFromExcelRecord } from "@/lib/payroll/columns";
 import { buildSampleDataset } from "@/lib/payroll/sampleData";
 import { buildEmployeeComparisons, extractPreviousRowsFromRun } from "@/lib/payroll/compare";
 import { buildRunRecord, mergeReviewState, recomputeRunRecord } from "@/lib/payroll/buildRun";
-import { ExcelParseError, parseMasterFile, parsePayrollFile } from "@/lib/payroll/excel";
+import { ExcelParseError, parsePayrollFile } from "@/lib/payroll/excel";
 import { getRunRecord, listRunSummaries, saveRun, updateEmployeeReview, closeRun as closeRunInStorage } from "@/lib/storage/runStorage";
 
 import Sidebar, { ViewId } from "./layout/Sidebar";
@@ -44,14 +44,12 @@ export default function PayrollApp() {
   const [payrollMonth, setPayrollMonth] = useState(defaultPayrollMonth());
   const [runName, setRunName] = useState(defaultRunName());
 
-  const [masterRows, setMasterRows] = useState<EmployeeMaster[] | null>(null);
   const [previousRows, setPreviousRows] = useState<PayrollInputRow[] | null>(null);
   const [currentRows, setCurrentRows] = useState<PayrollInputRow[] | null>(null);
 
-  const [masterFile, setMasterFile] = useState<UploadedFileInfo | null>(null);
   const [previousFile, setPreviousFile] = useState<UploadedFileInfo | null>(null);
   const [currentFile, setCurrentFile] = useState<UploadedFileInfo | null>(null);
-  const [uploadErrors, setUploadErrors] = useState<{ master?: string; previous?: string; current?: string }>({});
+  const [uploadErrors, setUploadErrors] = useState<{ previous?: string; current?: string }>({});
 
   const [rules, setRules] = useState<PayrollRules>(DEFAULT_RULES);
   const [activeRun, setActiveRun] = useState<PayrollRunRecord | null>(null);
@@ -73,19 +71,6 @@ export default function PayrollApp() {
 
   // 지난 작업 중 당월 자료가 있던 가장 최근 작업 - "전월 Payroll"을 자동 이월할 원천.
   const carryForwardSource = useMemo(() => recentRuns.find((r) => r.employeeCount > 0) ?? null, [recentRuns]);
-
-  async function handleUploadMaster(file: File) {
-    try {
-      const parsed = await parseMasterFile(file);
-      setMasterRows(parsed.rows);
-      setMasterFile({ fileName: parsed.fileName, rowCount: parsed.rows.length });
-      setUploadErrors((e) => ({ ...e, master: undefined }));
-    } catch (e) {
-      setMasterRows(null);
-      setMasterFile(null);
-      setUploadErrors((prev) => ({ ...prev, master: e instanceof ExcelParseError ? e.message : "예상치 못한 오류로 파일을 처리하지 못했습니다." }));
-    }
-  }
 
   async function handleUploadPrevious(file: File) {
     try {
@@ -114,15 +99,12 @@ export default function PayrollApp() {
   }
 
   function handleStartWithSample() {
-    const { master, previous, current } = buildSampleDataset();
-    const masterParsed = master.map((r) => masterRowFromExcelRecord(r as unknown as Record<string, unknown>));
+    const { previous, current } = buildSampleDataset();
     const previousParsed = previous.map((r) => payrollRowFromExcelRecord(r as unknown as Record<string, unknown>));
     const currentParsed = current.map((r) => payrollRowFromExcelRecord(r as unknown as Record<string, unknown>));
 
-    setMasterRows(masterParsed);
     setPreviousRows(previousParsed);
     setCurrentRows(currentParsed);
-    setMasterFile({ fileName: "sample_employee_master.xlsx", rowCount: masterParsed.length });
     setPreviousFile({ fileName: "sample_payroll_previous.xlsx", rowCount: previousParsed.length });
     setCurrentFile({ fileName: "sample_payroll_current.xlsx", rowCount: currentParsed.length });
     setUploadErrors({});
@@ -143,7 +125,7 @@ export default function PayrollApp() {
       setLoadingStep(step);
       await new Promise((r) => setTimeout(r, 110));
     }
-    const comparisons = buildEmployeeComparisons(masterRows ?? [], rowsToUse, currentRows, rules);
+    const comparisons = buildEmployeeComparisons(rowsToUse, currentRows, rules);
     const record = buildRunRecord(comparisons, runName.trim() || defaultRunName(), payrollMonth.trim() || defaultPayrollMonth(), rules);
     saveRun(record);
     setActiveRun(record);
@@ -154,7 +136,7 @@ export default function PayrollApp() {
 
   function handleSaveRules(newRules: PayrollRules) {
     if (!activeRun || !previousRows || !currentRows || loadedFromHistory) return;
-    const fresh = buildEmployeeComparisons(masterRows ?? [], previousRows, currentRows, newRules);
+    const fresh = buildEmployeeComparisons(previousRows, currentRows, newRules);
     const merged = mergeReviewState(fresh, activeRun.comparisons);
     const updated = recomputeRunRecord(activeRun.summary, merged, newRules);
     saveRun(updated);
@@ -208,12 +190,10 @@ export default function PayrollApp() {
               onChangePayrollMonth={setPayrollMonth}
               runName={runName}
               onChangeRunName={setRunName}
-              masterFile={masterFile}
               previousFile={previousFile}
               currentFile={currentFile}
               uploadErrors={uploadErrors}
               loadingStep={loadingStep}
-              onUploadMaster={handleUploadMaster}
               onUploadPrevious={handleUploadPrevious}
               onUploadCurrent={handleUploadCurrent}
               onStartWithSample={handleStartWithSample}

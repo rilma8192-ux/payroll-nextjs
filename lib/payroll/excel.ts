@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
-import { EmployeeComparison, EmployeeMaster, ParsedMasterFile, ParsedPayrollFile, PayrollInputRow, PayrollRunSummary } from "./types";
-import { checkMissingMasterHeaders, checkMissingPayrollHeaders } from "./validation";
-import { masterRowFromExcelRecord, payrollRowFromExcelRecord, RESULT_EXPORT_HEADERS } from "./columns";
+import { EmployeeComparison, ParsedPayrollFile, PayrollInputRow, PayrollRunSummary } from "./types";
+import { checkMissingPayrollHeaders } from "./validation";
+import { payrollRowFromExcelRecord, RESULT_EXPORT_HEADERS } from "./columns";
 import { buildSampleDataset } from "./sampleData";
 import { pct } from "./format";
 
@@ -35,16 +35,6 @@ function readWorkbookHeaderAndRecords(buffer: ArrayBuffer): { headerRow: string[
   return { headerRow, records };
 }
 
-export async function parseMasterFile(file: File): Promise<ParsedMasterFile> {
-  const buffer = await file.arrayBuffer();
-  const { headerRow, records } = readWorkbookHeaderAndRecords(buffer);
-  const missing = checkMissingMasterHeaders(headerRow);
-  if (missing.length > 0) throw new ExcelParseError(`Employee Master 필수 컬럼이 없습니다: ${missing.join(", ")}`);
-  if (records.length === 0) throw new ExcelParseError("업로드한 Employee Master 파일에 데이터가 없습니다.");
-  const rows: EmployeeMaster[] = records.map(masterRowFromExcelRecord);
-  return { fileName: file.name, columnCount: headerRow.length, rows };
-}
-
 export async function parsePayrollFile(file: File): Promise<ParsedPayrollFile> {
   const buffer = await file.arrayBuffer();
   const { headerRow, records } = readWorkbookHeaderAndRecords(buffer);
@@ -60,11 +50,6 @@ function writeWorkbook(rows: Record<string, unknown>[], sheetName: string, fileN
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   XLSX.writeFile(workbook, fileName);
-}
-
-export function downloadSampleMasterExcel(): void {
-  const { master } = buildSampleDataset();
-  writeWorkbook(master as unknown as Record<string, unknown>[], "Employee Master", "sample_employee_master.xlsx");
 }
 
 export function downloadSamplePreviousExcel(): void {
@@ -120,6 +105,9 @@ export function downloadResultExcel(
       직책: c.position,
       재직상태: c.employmentStatus,
       직원구분: c.changeType,
+      이메일: c.email,
+      연락처: c.phone,
+      입사일: c.hireDate,
       기본급: pickAmount(c, "baseSalary"),
       직책수당: pickAmount(c, "positionAllowance"),
       식대: pickAmount(c, "mealAllowance"),

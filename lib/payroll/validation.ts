@@ -1,11 +1,5 @@
 import { EmployeeChangeType, PayrollComputedResult, PayrollInputRow, PayrollRules, ValidationIssue } from "./types";
-import {
-  MASTER_REQUIRED_HEADERS,
-  PAYROLL_COLUMN_MAP,
-  PAYROLL_INSURANCE_HEADERS,
-  PAYROLL_NUMERIC_HEADERS,
-  PAYROLL_REQUIRED_HEADERS,
-} from "./columns";
+import { PAYROLL_COLUMN_MAP, PAYROLL_INSURANCE_HEADERS, PAYROLL_NUMERIC_HEADERS, PAYROLL_REQUIRED_HEADERS } from "./columns";
 import { toNumber } from "./calculation";
 
 /**
@@ -32,7 +26,6 @@ export function checkMissingHeaders(headerRow: string[], required: string[]): st
 }
 
 export const checkMissingPayrollHeaders = (headerRow: string[]) => checkMissingHeaders(headerRow, PAYROLL_REQUIRED_HEADERS);
-export const checkMissingMasterHeaders = (headerRow: string[]) => checkMissingHeaders(headerRow, MASTER_REQUIRED_HEADERS);
 
 export interface EmployeeRuleContext {
   employeeNumber: string;

@@ -1,24 +1,21 @@
-import { EmployeeMaster, PayrollInputRow } from "./types";
+import { PayrollInputRow } from "./types";
 
-/** Employee Master Excel 헤더 <-> 필드명 매핑 */
-export const MASTER_COLUMN_MAP: Array<[header: string, field: keyof EmployeeMaster]> = [
-  ["사번", "employeeNumber"],
-  ["성명", "employeeName"],
-  ["부서", "department"],
-  ["직책", "position"],
-  ["재직상태", "employmentStatus"],
-  ["이메일", "email"],
-  ["연락처", "phone"],
-  ["입사일", "hireDate"],
-];
-
-export const MASTER_REQUIRED_HEADERS = ["사번", "성명", "부서", "직책", "재직상태"];
-
-/** Payroll 입력 Excel 헤더 <-> 필드명 매핑 (전월/당월 공통) */
+/**
+ * Payroll 입력 Excel 헤더 <-> 필드명 매핑 (전월/당월 공통).
+ *
+ * 부서/직책/이메일/연락처/입사일은 별도의 Employee Master 파일 없이 이
+ * 한 시트에 선택 컬럼으로 함께 들어 있다고 가정한다 (실무 Payroll 대장에
+ * 인적사항이 함께 있는 경우가 많다는 점을 반영).
+ */
 export const PAYROLL_COLUMN_MAP: Array<[header: string, field: keyof PayrollInputRow]> = [
   ["사번", "employeeNumber"],
   ["성명", "employeeName"],
   ["재직상태", "employmentStatus"],
+  ["부서", "department"],
+  ["직책", "position"],
+  ["이메일", "email"],
+  ["연락처", "phone"],
+  ["입사일", "hireDate"],
   ["기본급", "baseSalary"],
   ["직책수당", "positionAllowance"],
   ["식대", "mealAllowance"],
@@ -94,15 +91,6 @@ export const COMPARISON_FIELDS: Array<{ field: string; label: string }> = [
   { field: "netPay", label: "최종지급액" },
 ];
 
-export function masterRowFromExcelRecord(record: Record<string, unknown>): EmployeeMaster {
-  const row = {} as EmployeeMaster;
-  for (const [header, field] of MASTER_COLUMN_MAP) {
-    const v = Object.prototype.hasOwnProperty.call(record, header) ? record[header] : null;
-    row[field] = v === null || v === undefined ? "" : String(v).trim();
-  }
-  return row;
-}
-
 export function payrollRowFromExcelRecord(record: Record<string, unknown>): PayrollInputRow {
   const row = {} as PayrollInputRow;
   for (const [header, field] of PAYROLL_COLUMN_MAP) {
@@ -119,6 +107,9 @@ export const RESULT_EXPORT_HEADERS = [
   "직책",
   "재직상태",
   "직원구분",
+  "이메일",
+  "연락처",
+  "입사일",
   "기본급",
   "직책수당",
   "식대",

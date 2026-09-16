@@ -1,12 +1,4 @@
-import {
-  EmployeeChangeType,
-  EmployeeComparison,
-  EmployeeMaster,
-  FieldDelta,
-  PayrollComputedResult,
-  PayrollInputRow,
-  PayrollRules,
-} from "./types";
+import { EmployeeChangeType, EmployeeComparison, FieldDelta, PayrollComputedResult, PayrollInputRow, PayrollRules } from "./types";
 import { COMPARISON_FIELDS } from "./columns";
 import { computeSinglePeriod, toNumber } from "./calculation";
 import { deriveValidationStatus, derivePriority, evaluateEmployeeRules } from "./validation";
@@ -14,9 +6,11 @@ import { deriveValidationStatus, derivePriority, evaluateEmployeeRules } from ".
 /**
  * compare.ts
  * -----------------------------------------------------------------------
- * Employee Master(선택) + 전월 Payroll(필수) + 당월 Payroll(필수) 을
- * 사번 기준으로 매칭하고, 시점별 계산과 변화 검증을 모두 수행해
- * EmployeeComparison[] 를 만든다. UI 는 이 배열만 소비한다.
+ * 전월 Payroll(필수) + 당월 Payroll(필수) 을 사번 기준으로 매칭하고,
+ * 시점별 계산과 변화 검증을 모두 수행해 EmployeeComparison[] 를 만든다.
+ * 부서/직책/이메일/연락처/입사일 같은 인적사항은 별도 Employee Master
+ * 파일이 아니라 Payroll 시트의 선택 컬럼에서 그대로 가져온다 (당월 값을
+ * 우선하고, 당월에 없으면 전월 값을 쓴다). UI 는 이 배열만 소비한다.
  * -----------------------------------------------------------------------
  */
 
@@ -50,13 +44,18 @@ function buildDeltas(previous: PayrollComputedResult, current: PayrollComputedRe
   });
 }
 
-export function buildEmployeeComparisons(
-  masterRows: EmployeeMaster[],
-  previousRows: PayrollInputRow[],
-  currentRows: PayrollInputRow[],
-  rules: PayrollRules
-): EmployeeComparison[] {
-  const masterMap = indexByEmployeeNumber(masterRows);
+function personalInfo(previousComputed: PayrollComputedResult | null, currentComputed: PayrollComputedResult | null) {
+  const source = currentComputed ?? previousComputed;
+  return {
+    department: source?.department ?? "",
+    position: source?.position ?? "",
+    email: source?.email ?? "",
+    phone: source?.phone ?? "",
+    hireDate: source?.hireDate ?? "",
+  };
+}
+
+export function buildEmployeeComparisons(previousRows: PayrollInputRow[], currentRows: PayrollInputRow[], rules: PayrollRules): EmployeeComparison[] {
   const previousMap = indexByEmployeeNumber(previousRows);
   const currentMap = indexByEmployeeNumber(currentRows);
   const currentDuplicateCounts = countByEmployeeNumber(currentRows);
@@ -76,7 +75,6 @@ export function buildEmployeeComparisons(
   for (const key of keys) {
     const previousRow = previousMap.get(key) ?? null;
     const currentRow = currentMap.get(key) ?? null;
-    const master = masterMap.get(key) ?? null;
 
     const changeType: EmployeeChangeType = currentRow && previousRow ? "기존" : currentRow ? "신규" : "전월미존재";
 
@@ -102,18 +100,14 @@ export function buildEmployeeComparisons(
     const totalChangeAmount = previousComputed && currentComputed ? currGross - prevGross : null;
     const totalChangeRate = previousComputed && currentComputed && prevGross > 0 ? ((currGross - prevGross) / prevGross) * 100 : null;
 
-    const employeeName = currentComputed?.employeeName || previousComputed?.employeeName || master?.employeeName || "";
-    const employmentStatus = currentComputed?.employmentStatus || previousComputed?.employmentStatus || master?.employmentStatus || "";
+    const employeeName = currentComputed?.employeeName || previousComputed?.employeeName || "";
+    const employmentStatus = currentComputed?.employmentStatus || previousComputed?.employmentStatus || "";
 
     results.push({
       employeeNumber: key,
       employeeName,
-      department: master?.department ?? "",
-      position: master?.position ?? "",
       employmentStatus,
-      email: master?.email ?? "",
-      phone: master?.phone ?? "",
-      hireDate: master?.hireDate ?? "",
+      ...personalInfo(previousComputed, currentComputed),
 
       changeType,
       previous: previousComputed,
@@ -149,12 +143,8 @@ export function buildEmployeeComparisons(
     results.push({
       employeeNumber: currentComputed.employeeNumber || "(사번없음)",
       employeeName: currentComputed.employeeName,
-      department: "",
-      position: "",
       employmentStatus: currentComputed.employmentStatus,
-      email: "",
-      phone: "",
-      hireDate: "",
+      ...personalInfo(null, currentComputed),
       changeType: "신규",
       previous: null,
       current: currentComputed,
@@ -183,6 +173,11 @@ export function computedResultToInputRow(result: PayrollComputedResult): Payroll
     employeeNumber: result.employeeNumber,
     employeeName: result.employeeName,
     employmentStatus: result.employmentStatus,
+    department: result.department,
+    position: result.position,
+    email: result.email,
+    phone: result.phone,
+    hireDate: result.hireDate,
     baseSalary: result.baseSalary,
     positionAllowance: result.positionAllowance,
     mealAllowance: result.mealAllowance,
