@@ -42,6 +42,11 @@ create table if not exists payroll_results (
   employee_name text not null,
   employment_status text not null,
 
+  -- 인적사항 (급여 계산에는 사용되지 않는 참고 정보, 전부 가상 데이터)
+  department text not null default '',
+  phone text not null default '',
+  email text not null default '',
+
   base_salary numeric not null default 0,
   position_allowance numeric not null default 0,
   meal_allowance numeric not null default 0,

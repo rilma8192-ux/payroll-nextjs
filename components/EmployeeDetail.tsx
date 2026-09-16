@@ -36,14 +36,9 @@ export default function EmployeeDetail({ result, rules, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <div>
-            <div className="flex items-center gap-2 text-lg font-bold text-slate-900">
-              {result.employeeName}
-              <StatusBadge status={result.status} />
-            </div>
-            <div className="text-xs text-slate-500">
-              사번 {result.employeeNumber} · 재직상태 {result.employmentStatus}
-            </div>
+          <div className="flex items-center gap-2 text-lg font-bold text-slate-900">
+            {result.employeeName}
+            <StatusBadge status={result.status} />
           </div>
           <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
             <X className="h-5 w-5" />
@@ -51,6 +46,16 @@ export default function EmployeeDetail({ result, rules, onClose }: Props) {
         </div>
 
         <div className="space-y-6 px-5 py-4">
+          <div>
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">기본정보</h3>
+            <KV label="사번" value={result.employeeNumber} />
+            <KV label="성명" value={result.employeeName} />
+            <KV label="재직상태" value={result.employmentStatus} />
+            <KV label="부서" value={result.department || "-"} />
+            <KV label="연락처" value={result.phone || "-"} />
+            <KV label="이메일" value={result.email || "-"} />
+          </div>
+
           <div>
             <h3 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">지급내역</h3>
             <KV label="기본급" value={won(result.baseSalary)} />

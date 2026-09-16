@@ -115,6 +115,10 @@ function buildResult(
     employeeName: isBlankToStr(row.employeeName),
     employmentStatus: isBlankToStr(row.employmentStatus),
 
+    department: isBlankToStr(row.department),
+    phone: isBlankToStr(row.phone),
+    email: isBlankToStr(row.email),
+
     baseSalary: num(row.baseSalary),
     positionAllowance: num(row.positionAllowance),
     mealAllowance: num(row.mealAllowance),

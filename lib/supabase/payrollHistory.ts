@@ -50,6 +50,9 @@ interface PayrollResultRow {
   employee_number: string;
   employee_name: string;
   employment_status: string;
+  department: string | null;
+  phone: string | null;
+  email: string | null;
   base_salary: number;
   position_allowance: number;
   meal_allowance: number;
@@ -82,6 +85,9 @@ function rowToResult(row: PayrollResultRow): PayrollResult {
     employeeNumber: row.employee_number,
     employeeName: row.employee_name,
     employmentStatus: row.employment_status,
+    department: row.department ?? "",
+    phone: row.phone ?? "",
+    email: row.email ?? "",
     baseSalary: Number(row.base_salary),
     positionAllowance: Number(row.position_allowance),
     mealAllowance: Number(row.meal_allowance),
@@ -152,6 +158,9 @@ export async function savePayrollRun(
     employee_number: r.employeeNumber,
     employee_name: r.employeeName,
     employment_status: r.employmentStatus,
+    department: r.department,
+    phone: r.phone,
+    email: r.email,
     base_salary: r.baseSalary,
     position_allowance: r.positionAllowance,
     meal_allowance: r.mealAllowance,

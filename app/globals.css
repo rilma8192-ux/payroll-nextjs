@@ -10,6 +10,15 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /*
+   * 이트너스(ETNERS) 브랜드 컬러 — 버튼/강조 텍스트/선택된 탭/상태 뱃지
+   * 포인트 컬러 등 핵심 액션 요소에 일관되게 사용하는 단일 소스.
+   * Tailwind의 orange-500/600 값과 동일하게 맞춰 기존 화면 톤을 유지하며,
+   * 이후 정확한 회사 팬톤/헥스 코드로 교체할 경우 이 두 값만 바꾸면 된다.
+   */
+  --color-brand: #f97316;
+  --color-brand-dark: #ea580c;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -23,6 +23,11 @@ export interface EmployeeInput {
   localIncomeTax: unknown;
   otherDeduction: unknown;
   previousGrossPay: unknown;
+
+  /** 인적사항 (급여 계산에는 사용되지 않음) */
+  department?: unknown;
+  phone?: unknown;
+  email?: unknown;
 }
 
 /** 시연용 계산 기준 (실제 법정 요율이 아님) */
@@ -43,6 +48,11 @@ export interface PayrollResult extends ValidationResult {
   employeeNumber: string;
   employeeName: string;
   employmentStatus: string;
+
+  /** 인적사항 (급여 계산에는 사용되지 않는 참고 정보) */
+  department: string;
+  phone: string;
+  email: string;
 
   baseSalary: number;
   positionAllowance: number;
