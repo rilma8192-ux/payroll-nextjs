@@ -173,4 +173,37 @@ export function buildEmployeeComparisons(
   return results;
 }
 
+/**
+ * 저장된 작업(run)의 당월 계산 결과를, 다음 작업을 만들 때 "전월 Payroll" 입력으로 다시
+ * 쓸 수 있도록 PayrollInputRow 형태로 되돌린다 (자동 이월). PayrollComputedResult 는
+ * 원본 입력 필드를 전부 그대로 들고 있으므로 값 손실 없이 역변환할 수 있다.
+ */
+export function computedResultToInputRow(result: PayrollComputedResult): PayrollInputRow {
+  return {
+    employeeNumber: result.employeeNumber,
+    employeeName: result.employeeName,
+    employmentStatus: result.employmentStatus,
+    baseSalary: result.baseSalary,
+    positionAllowance: result.positionAllowance,
+    mealAllowance: result.mealAllowance,
+    fixedAllowance: result.fixedAllowance,
+    overtimeHours: result.overtimeHours,
+    overtimePay: result.overtimePay,
+    incentive: result.incentive,
+    bonus: result.bonus,
+    otherPayment: result.otherPayment,
+    pensionApplied: result.pensionApplied,
+    healthInsuranceApplied: result.healthInsuranceApplied,
+    employmentInsuranceApplied: result.employmentInsuranceApplied,
+    incomeTax: result.incomeTax,
+    localIncomeTax: result.localIncomeTax,
+    otherDeduction: result.otherDeduction,
+  };
+}
+
+/** 저장된 작업(run)에서 당월 자료가 있던 직원들만 추려 "전월 Payroll" 입력 배열로 변환한다. */
+export function extractPreviousRowsFromRun(comparisons: EmployeeComparison[]): PayrollInputRow[] {
+  return comparisons.filter((c) => c.current !== null).map((c) => computedResultToInputRow(c.current as PayrollComputedResult));
+}
+
 export { toNumber };

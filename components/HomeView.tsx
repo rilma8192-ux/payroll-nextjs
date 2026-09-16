@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { AlertTriangle, FileSpreadsheet, History, PlayCircle, Sparkles, UploadCloud } from "lucide-react";
+import { AlertTriangle, FileSpreadsheet, History, PlayCircle, Repeat, Sparkles, UploadCloud } from "lucide-react";
 import { EmployeeComparison, PayrollRunSummary } from "@/lib/payroll/types";
 import { won } from "@/lib/payroll/format";
 import { downloadSampleCurrentExcel, downloadSampleMasterExcel, downloadSamplePreviousExcel } from "@/lib/payroll/excel";
@@ -38,6 +38,10 @@ interface Props {
 
   recentRuns: PayrollRunSummary[];
   onOpenRun: (id: string) => void;
+
+  carryForwardSource: PayrollRunSummary | null;
+  useCarryForward: boolean;
+  onToggleCarryForward: (v: boolean) => void;
 }
 
 const PRIORITY_ORDER: Record<string, number> = { "높음": 0, "중간": 1, "낮음": 2 };
@@ -124,9 +128,13 @@ export default function HomeView(props: Props) {
     onGotoReview,
     recentRuns,
     onOpenRun,
+    carryForwardSource,
+    useCarryForward,
+    onToggleCarryForward,
   } = props;
 
-  const canValidate = Boolean(previousFile && currentFile);
+  const carryForwardActive = Boolean(useCarryForward && carryForwardSource && !previousFile);
+  const canValidate = Boolean(currentFile) && Boolean(previousFile || (useCarryForward && carryForwardSource));
 
   const priorityList = comparisons
     ? comparisons
@@ -173,9 +181,45 @@ export default function HomeView(props: Props) {
           </button>
         </div>
 
+        {carryForwardSource && (
+          <label
+            className={`mt-4 flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 text-sm transition-colors ${
+              carryForwardActive ? "border-brand bg-brand-soft" : "border-slate-200 bg-slate-50"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={useCarryForward}
+              onChange={(e) => onToggleCarryForward(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-orange-500"
+            />
+            <span>
+              <span className="flex items-center gap-1.5 font-medium text-slate-800">
+                <Repeat className="h-3.5 w-3.5 text-brand" />
+                지난 작업 결과를 전월 기준으로 자동 이월
+              </span>
+              <span className="mt-0.5 block text-xs text-slate-500">
+                &apos;{carryForwardSource.runName}&apos; ({carryForwardSource.payrollMonth}) 의 당월 결과 {carryForwardSource.employeeCount}명을
+                전월 자료로 사용합니다. 전월 Payroll 파일을 직접 업로드하면 이 설정 대신 그 파일이 사용됩니다.
+              </span>
+            </span>
+          </label>
+        )}
+
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <UploadSlot label="Employee Master" required={false} info={masterFile} error={uploadErrors.master} onFile={onUploadMaster} />
-          <UploadSlot label="전월 Payroll" required info={previousFile} error={uploadErrors.previous} onFile={onUploadPrevious} />
+          <UploadSlot
+            label="전월 Payroll"
+            required={!carryForwardActive}
+            info={
+              previousFile ??
+              (carryForwardActive && carryForwardSource
+                ? { fileName: `자동 이월 · ${carryForwardSource.runName}`, rowCount: carryForwardSource.employeeCount }
+                : null)
+            }
+            error={uploadErrors.previous}
+            onFile={onUploadPrevious}
+          />
           <UploadSlot label="당월 Payroll" required info={currentFile} error={uploadErrors.current} onFile={onUploadCurrent} />
         </div>
 

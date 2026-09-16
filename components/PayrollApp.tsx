@@ -5,7 +5,7 @@ import { EmployeeComparison, EmployeeMaster, PayrollInputRow, PayrollRules, Payr
 import { DEFAULT_RULES } from "@/lib/payroll/rules";
 import { masterRowFromExcelRecord, payrollRowFromExcelRecord } from "@/lib/payroll/columns";
 import { buildSampleDataset } from "@/lib/payroll/sampleData";
-import { buildEmployeeComparisons } from "@/lib/payroll/compare";
+import { buildEmployeeComparisons, extractPreviousRowsFromRun } from "@/lib/payroll/compare";
 import { buildRunRecord, mergeReviewState, recomputeRunRecord } from "@/lib/payroll/buildRun";
 import { ExcelParseError, parseMasterFile, parsePayrollFile } from "@/lib/payroll/excel";
 import { getRunRecord, listRunSummaries, saveRun, updateEmployeeReview, closeRun as closeRunInStorage } from "@/lib/storage/runStorage";
@@ -61,6 +61,7 @@ export default function PayrollApp() {
   // 서버 렌더링과 첫 클라이언트 렌더의 hydration mismatch를 피하기 위해 빈 배열로 시작하고,
   // localStorage 값은 마운트 이후 useEffect 에서만 읽어온다.
   const [recentRuns, setRecentRuns] = useState<ReturnType<typeof listRunSummaries>>([]);
+  const [useCarryForward, setUseCarryForward] = useState(true);
 
   function refreshRecentRuns() {
     setRecentRuns(listRunSummaries());
@@ -69,6 +70,9 @@ export default function PayrollApp() {
   useEffect(() => {
     refreshRecentRuns();
   }, []);
+
+  // 지난 작업 중 당월 자료가 있던 가장 최근 작업 - "전월 Payroll"을 자동 이월할 원천.
+  const carryForwardSource = useMemo(() => recentRuns.find((r) => r.employeeCount > 0) ?? null, [recentRuns]);
 
   async function handleUploadMaster(file: File) {
     try {
@@ -125,13 +129,21 @@ export default function PayrollApp() {
   }
 
   async function runValidation() {
-    if (!previousRows || !currentRows) return;
+    // 전월 파일을 직접 업로드하지 않았다면, 지난 작업의 당월 결과를 전월 기준으로 자동 이월한다.
+    let rowsToUse = previousFile ? previousRows : null;
+    if (!rowsToUse && useCarryForward && carryForwardSource) {
+      const record = getRunRecord(carryForwardSource.id);
+      if (record) rowsToUse = extractPreviousRowsFromRun(record.comparisons);
+    }
+    if (!rowsToUse || !currentRows) return;
+
+    setPreviousRows(rowsToUse);
     setLoadedFromHistory(false);
     for (const step of CALC_STEPS) {
       setLoadingStep(step);
       await new Promise((r) => setTimeout(r, 110));
     }
-    const comparisons = buildEmployeeComparisons(masterRows ?? [], previousRows, currentRows, rules);
+    const comparisons = buildEmployeeComparisons(masterRows ?? [], rowsToUse, currentRows, rules);
     const record = buildRunRecord(comparisons, runName.trim() || defaultRunName(), payrollMonth.trim() || defaultPayrollMonth(), rules);
     saveRun(record);
     setActiveRun(record);
@@ -206,6 +218,9 @@ export default function PayrollApp() {
               onUploadCurrent={handleUploadCurrent}
               onStartWithSample={handleStartWithSample}
               onStartValidation={runValidation}
+              carryForwardSource={carryForwardSource}
+              useCarryForward={useCarryForward}
+              onToggleCarryForward={setUseCarryForward}
               comparisons={activeRun?.comparisons ?? null}
               summary={activeRun?.summary ?? null}
               onOpenDrawer={setSelectedEmployee}
